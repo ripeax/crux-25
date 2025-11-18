@@ -1,4 +1,4 @@
-# crux-25
+# crux:25
 stager - red teaming tool
 
 Work-in-Progress: CRUX:25
