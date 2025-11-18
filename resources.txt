@@ -1,0 +1,14 @@
+Meta-Programming for code generation
+
+https://medium.com/@AlexanderObregon/c-templates-and-metaprogramming-214a7b0db803
+https://learn.microsoft.com/en-us/visualstudio/modeling/design-time-code-generation-by-using-t4-text-templates?view=visualstudio&tabs=csharp
+
+Shellcode creation:
+https://www.ired.team/offensive-security/code-injection-process-injection/writing-and-compiling-shellcode-in-c#c-shellcode.cpp
+https://github.com/vxunderground/VXUG-Papers/blob/main/From%20a%20C%20project%20through%20assembly%20to%20shellcode.pdf
+
+Credential dumping without mimikatz:
+https://github.com/riskydissonance/SafetyDump/blob/master/SafetyDump/Program.cs
+
+Propagation:
+// source: https://github.com/vxunderground/VXUG-Papers/tree/main/Weaponizing%20Windows%20Virtualization
