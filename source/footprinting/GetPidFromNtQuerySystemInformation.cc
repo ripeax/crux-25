@@ -23,7 +23,7 @@ DWORD GetPidFromNtQuerySystemInformationW(_In_ PWCHAR BinaryNameWithFileExtensio
 	if (hModule == NULL)
 		goto EXIT_ROUTINE;
 
-	NtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddressA((DWORD64)hModule, "NtQuerySystemInformation");
+	NtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddress(hModule, "NtQuerySystemInformation");
 	if (!NtQuerySystemInformation)
 		goto EXIT_ROUTINE;
 
@@ -81,7 +81,7 @@ DWORD GetPidFromNtQuerySystemInformationA(_In_ PCHAR BinaryNameWithFileExtension
 	if (hModule == NULL)
 		goto EXIT_ROUTINE;
 
-	NtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddressA((DWORD64)hModule, "NtQuerySystemInformation");
+	NtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddress(hModule, "NtQuerySystemInformation");
 	if (!NtQuerySystemInformation)
 		goto EXIT_ROUTINE;
 

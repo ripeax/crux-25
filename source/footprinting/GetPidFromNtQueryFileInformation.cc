@@ -22,10 +22,10 @@ DWORD GetPidFromNtQueryFileInformationW(_In_ PWCHAR FullBinaryPath)
 	if (!IsPathValidW(FullBinaryPath))
 		return 0;
 
-	RtlDosPathNameToNtPathName_U = (RTLDOSPATHNAMETONTPATHNAME_U)GetProcAddressA((DWORD64)hModule, "RtlDosPathNameToNtPathName_U");
-	NtOpenFile = (NTOPENFILE)GetProcAddressA((DWORD64)hModule, "NtOpenFile");
-	NtClose = (NTCLOSE)GetProcAddressA((DWORD64)hModule, "NtClose");
-	NtQueryInformationFile = (NTQUERYINFORMATIONFILE)GetProcAddressA((DWORD64)hModule, "NtQueryInformationFile");
+	RtlDosPathNameToNtPathName_U = (RTLDOSPATHNAMETONTPATHNAME_U)GetProcAddress(hModule, "RtlDosPathNameToNtPathName_U");
+	NtOpenFile = (NTOPENFILE)GetProcAddress(hModule, "NtOpenFile");
+	NtClose = (NTCLOSE)GetProcAddress(hModule, "NtClose");
+	NtQueryInformationFile = (NTQUERYINFORMATIONFILE)GetProcAddress(hModule, "NtQueryInformationFile");
 
 	if (!RtlDosPathNameToNtPathName_U || !NtOpenFile || !NtClose || !NtQueryInformationFile)
 		return 0;
@@ -89,10 +89,10 @@ DWORD GetPidFromNtQueryFileInformationA(_In_ PCHAR FullBinaryPath)
 	if (!IsPathValidW(BinaryPathString))
 		return 0;
 
-	RtlDosPathNameToNtPathName_U = (RTLDOSPATHNAMETONTPATHNAME_U)GetProcAddressA((DWORD64)hModule, "RtlDosPathNameToNtPathName_U");
-	NtOpenFile = (NTOPENFILE)GetProcAddressA((DWORD64)hModule, "NtOpenFile");
-	NtClose = (NTCLOSE)GetProcAddressA((DWORD64)hModule, "NtClose");
-	NtQueryInformationFile = (NTQUERYINFORMATIONFILE)GetProcAddressA((DWORD64)hModule, "NtQueryInformationFile");
+	RtlDosPathNameToNtPathName_U = (RTLDOSPATHNAMETONTPATHNAME_U)GetProcAddress(hModule, "RtlDosPathNameToNtPathName_U");
+	NtOpenFile = (NTOPENFILE)GetProcAddress(hModule, "NtOpenFile");
+	NtClose = (NTCLOSE)GetProcAddress(hModule, "NtClose");
+	NtQueryInformationFile = (NTQUERYINFORMATIONFILE)GetProcAddress(hModule, "NtQueryInformationFile");
 
 	if (!RtlDosPathNameToNtPathName_U || !NtOpenFile || !NtClose || !NtQueryInformationFile)
 		return 0;

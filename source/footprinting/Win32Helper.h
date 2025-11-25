@@ -20,6 +20,10 @@ typedef NTSTATUS(NTAPI* NTQUERYINFORMATIONFILE)(
     FILE_INFORMATION_CLASS FileInformationClass
 );
 
+#ifndef FileProcessIdsUsingFileInformation
+#define FileProcessIdsUsingFileInformation ((FILE_INFORMATION_CLASS)47)
+#endif
+
 typedef NTSTATUS(NTAPI* NTOPENFILE)(
     PHANDLE FileHandle,
     ACCESS_MASK DesiredAccess,

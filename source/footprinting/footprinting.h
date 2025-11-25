@@ -28,9 +28,6 @@ struct ProcessInfo {
     bool is_system; // True if SessionId == 0
 };
 
-    bool is_system; // True if SessionId == 0
-};
-
 enum class IntegrityLevel {
     UNTRUSTED,
     LOW,

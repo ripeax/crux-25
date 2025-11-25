@@ -72,5 +72,6 @@ int main() {
     std::cout << "    Suggested Payload: " << recon.GetPayloadName(suggested) << std::endl;
 
     std::cout << "\n[+] Reconnaissance Complete." << std::endl;
+    system("pause");
     return 0;
 }
