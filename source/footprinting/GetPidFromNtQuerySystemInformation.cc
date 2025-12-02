@@ -44,8 +44,11 @@ DWORD GetPidFromNtQuerySystemInformationW(_In_ PWCHAR BinaryNameWithFileExtensio
 	{
 		if (ProcessInformationPointer->ImageName.Buffer)
 		{
+            // #ifdef DEBUG
+            // std::wcout << L"[Footprinting] Enum: " << ProcessInformationPointer->ImageName.Buffer << std::endl;
+            // #endif
 			if (StringCompareW(BinaryNameWithFileExtension, ProcessInformationPointer->ImageName.Buffer) == ERROR_SUCCESS)
-				ProcessId = HandleToLong(ProcessInformationPointer->UniqueProcessId);
+				ProcessId = (DWORD)(ProcessInformationPointer->UniqueProcessId);
 		}
 
 		if (ProcessId != 0)
@@ -103,7 +106,7 @@ DWORD GetPidFromNtQuerySystemInformationA(_In_ PCHAR BinaryNameWithFileExtension
 		if (ProcessInformationPointer->ImageName.Buffer)
 		{
 			if (StringCompareW(BinaryName, ProcessInformationPointer->ImageName.Buffer) == ERROR_SUCCESS)
-				ProcessId = HandleToLong(ProcessInformationPointer->UniqueProcessId);
+				ProcessId = (DWORD)(ProcessInformationPointer->UniqueProcessId);
 		}
 
 		if (ProcessId != 0)

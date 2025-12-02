@@ -5,7 +5,11 @@
 
 Comm::Comm(const std::wstring& userAgent) : userAgent(userAgent), hSession(NULL), hConnect(NULL), hRequest(NULL) {
 #ifdef DEBUG
-    std::cout << "[DEBUG] Comm initialized with UA: " << std::string(userAgent.begin(), userAgent.end()) << std::endl;
+    // Simple conversion for debug output to avoid warnings
+    std::string debugUA;
+    for(wchar_t c : userAgent) debugUA += (char)c;
+    
+    std::cout << "[Main] Comm initialized with UA: " << debugUA << std::endl;
 #endif
 }
 
@@ -61,7 +65,7 @@ void Comm::SetProxy(const std::wstring& proxy) {
     this->proxy = proxy;
 }
 
-std::string Comm::SendRequest(const std::wstring& server, int port, const std::wstring& path, const std::wstring& method, const std::string& data) {
+std::string Comm::SendRequest(const std::wstring& server, int port, const std::wstring& path, const std::wstring& method, const std::string& data, const std::wstring& headers) {
     std::string response;
 
 #ifdef DEBUG
@@ -82,10 +86,18 @@ std::string Comm::SendRequest(const std::wstring& server, int port, const std::w
         return "";
     }
 
+    DWORD dwFlags = WINHTTP_FLAG_SECURE;
+#ifdef DEBUG
+    if (port == 8080 || port == 80) {
+        dwFlags = 0; // Disable SSL for local debug
+        std::cout << "[DEBUG] Disabling SSL for port " << port << std::endl;
+    }
+#endif
+
     hRequest = WinHttpOpenRequest(hConnect, method.c_str(), path.c_str(),
                                   NULL, WINHTTP_NO_REFERER, 
                                   WINHTTP_DEFAULT_ACCEPT_TYPES, 
-                                  WINHTTP_FLAG_SECURE); // Assuming HTTPS by default
+                                  dwFlags);
 
     if (!hRequest) {
 #ifdef DEBUG
@@ -94,8 +106,11 @@ std::string Comm::SendRequest(const std::wstring& server, int port, const std::w
         return "";
     }
 
+    LPCWSTR pwszHeaders = headers.empty() ? WINHTTP_NO_ADDITIONAL_HEADERS : headers.c_str();
+    DWORD dwHeadersLen = headers.empty() ? 0 : headers.length();
+
     BOOL bResults = WinHttpSendRequest(hRequest,
-                                       WINHTTP_NO_ADDITIONAL_HEADERS, 0,
+                                       pwszHeaders, dwHeadersLen,
                                        (LPVOID)data.c_str(), data.length(),
                                        data.length(), 0);
 

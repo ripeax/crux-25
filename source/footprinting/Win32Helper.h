@@ -1,15 +1,19 @@
 #pragma once
 #include <Windows.h>
-#include <winternl.h>
+// #include <winternl.h> // Conflict with local ntddk.h
 #include <string>
 
 #pragma comment(lib, "ntdll.lib")
+
+#include "../ntddk.h" // Use local ntddk.h instead of winternl.h
 
 #ifndef NT_SUCCESS
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
 #endif
 
+#ifndef STATUS_SUCCESS
 #define STATUS_SUCCESS 0x00000000
+#endif
 
 // Function Pointer Definitions
 typedef NTSTATUS(NTAPI* NTQUERYINFORMATIONFILE)(
@@ -101,7 +105,7 @@ inline int StringLengthA(LPCSTR str) {
 }
 
 inline int StringCompareW(LPCWSTR s1, LPCWSTR s2) {
-    return wcscmp(s1, s2); // Returns 0 (ERROR_SUCCESS) if equal
+    return _wcsicmp(s1, s2); // Returns 0 (ERROR_SUCCESS) if equal (case-insensitive)
 }
 
 inline DWORD HandleToLong(HANDLE h) {

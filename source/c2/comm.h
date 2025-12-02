@@ -16,7 +16,7 @@ public:
 
     bool Initialize();
     void SetProxy(const std::wstring& proxy);
-    std::string SendRequest(const std::wstring& server, int port, const std::wstring& path, const std::wstring& method, const std::string& data = "");
+    std::string SendRequest(const std::wstring& server, int port, const std::wstring& path, const std::wstring& method, const std::string& data = "", const std::wstring& headers = L"");
 
 #ifdef DEBUG
     void SetDebugBypass(bool bypass);
